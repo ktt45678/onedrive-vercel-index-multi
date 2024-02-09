@@ -26,11 +26,17 @@ function sanitiseQuery(query: string): string {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Get access token from storage
-  const accessToken = await getAccessToken()
-
   // Query parameter from request
-  const { q: searchQuery = '' } = req.query
+  const { q: searchQuery = '', user = '' } = req.query
+
+  const userPrefix = Array.isArray(user) ? user[0] : user
+
+  // Get access token from storage
+  const accessToken = await getAccessToken(userPrefix)
+  if (!accessToken) {
+    res.status(403).json({ error: 'No access token.' })
+    return
+  }
 
   // Set edge function caching for faster load times, check docs:
   // https://vercel.com/docs/concepts/functions/edge-caching

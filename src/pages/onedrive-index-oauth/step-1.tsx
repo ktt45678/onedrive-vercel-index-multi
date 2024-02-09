@@ -9,28 +9,29 @@ import apiConfig from '../../../config/api.config'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { getAccessToken } from '../api'
+import SwitchUser from '../../components/SwitchUser'
+//import { getAccessToken } from '../api'
 
 export async function getServerSideProps({ locale }) {
   const clientId = process.env.CLIENT_ID || '';
-  const clientSecret = process.env.CLIENT_SECRET || '';
+  //const clientSecret = process.env.CLIENT_SECRET || '';
   // Get accessToken using getAccessToken function
-  const accessToken = await getAccessToken();
+  //const accessToken = await getAccessToken();
   // If the accessToken exists, redirect to the home page
-  if (accessToken) {
-    return {
-      redirect: {
-        destination: '/',
-        permanent: false,
-      },
-    }
-  }
+  // if (accessToken) {
+  //   return {
+  //     redirect: {
+  //       destination: '/',
+  //       permanent: false,
+  //     },
+  //   }
+  // }
   // If the accessToken does not exist, render the page normally
   return {
     props: {
       ...(await serverSideTranslations(locale, ['common'])),
       clientId,
-      clientSecret,
+      clientSecret: 'REDACTED',
     },
   }
 }
@@ -51,6 +52,7 @@ export default function OAuthStep1({ clientId, clientSecret }) {
 
         <div className="mx-auto w-full max-w-5xl p-4">
           <div className="rounded bg-white p-3 dark:bg-gray-900 dark:text-gray-100">
+            <SwitchUser />
             <div className="mx-auto w-52">
               <Image src="/images/fabulous-fireworks.png" width={912} height={912} alt="fabulous fireworks" priority />
             </div>

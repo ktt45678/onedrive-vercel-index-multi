@@ -15,6 +15,9 @@ module.exports = {
   // You can put this in Vercel's environment variable 'KV_PREFIX' without any modification here.
   kvPrefix: process.env.KV_PREFIX || '',
 
+  // Prefixes for multiple users, separated by commas
+  userList: process.env.USER_LIST ? process.env.USER_LIST.split(',') : [],
+
   // The name of your website. Present alongside your icon.
   // You can put this in Vercel's environment variable 'NEXT_PUBLIC_SITE_TITLE' without any modification here.
   title: process.env.NEXT_PUBLIC_SITE_TITLE || 'OneDrive-Index',
@@ -27,18 +30,18 @@ module.exports = {
   // [OPTIONAL] If you want to display the email used to contact you on the right side of the nav bar, 
   // you can set it in Vercel's environment variable 'NEXT_PUBLIC_EMAIL' without any modification here.
   email: process.env.NEXT_PUBLIC_EMAIL ? `mailto:${process.env.NEXT_PUBLIC_EMAIL}` : '',
-  
+
   // [OPTIONAL] The footer component of your website. You can write HTML here, but you need to escape double quotes - changing " to \".
   // You can write anything here, and if you like badges, generate some with https://shields.io
   footer:
-  'Powered by <a href="https://github.com/iRedScarf/onedrive-index" target="_blank" rel="noopener noreferrer">onedrive-index</a>.',
+    'Kam.',
 
   // [OPTIONAL] This is an array of names and links for setting your social information and links.
   // In the latest update, all brand icons inside font awesome is supported and the icon to render is based on the name you provide. See the documentation for details.
   links: [
     {
       name: 'GitHub',
-      link: 'https://github.com/iRedScarf/onedrive-index',
+      link: 'https://github.com/ktt45678/onedrive-vercel-index-multi',
     },
   ],
 

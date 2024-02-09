@@ -11,6 +11,8 @@ import { DownloadBtnContainer, PreviewContainer } from './Containers'
 import { LoadingIcon } from '../Loading'
 import { formatModifiedDateTime } from '../../utils/fileDetails'
 import { getStoredToken } from '../../utils/protectedRouteHandler'
+import useLocalStorage from '../../utils/useLocalStorage'
+import { users } from '../SwitchUser'
 
 enum PlayerState {
   Loading,
@@ -23,13 +25,14 @@ const AudioPreview: FC<{ file: OdFileObject }> = ({ file }) => {
   const { t } = useTranslation()
   const { asPath } = useRouter()
   const hashedToken = getStoredToken(asPath)
+  const [preferredUser, _] = useLocalStorage('preferredUser', users[0])
 
   const rapRef = useRef<ReactAudioPlayer>(null)
   const [playerStatus, setPlayerStatus] = useState(PlayerState.Loading)
   const [playerVolume, setPlayerVolume] = useState(1)
 
   // Render audio thumbnail, and also check for broken thumbnails
-  const thumbnail = `/api/thumbnail/?path=${asPath}&size=medium${hashedToken ? `&odpt=${hashedToken}` : ''}`
+  const thumbnail = `/api/thumbnail/?path=${asPath}&size=medium${hashedToken ? `&odpt=${hashedToken}` : ''}${preferredUser?.value ? `&user=${preferredUser.value}` : ''}`
   const [brokenThumbnail, setBrokenThumbnail] = useState(false)
 
   useEffect(() => {
@@ -96,7 +99,7 @@ const AudioPreview: FC<{ file: OdFileObject }> = ({ file }) => {
 
             <ReactAudioPlayer
               className="h-11 w-full"
-              src={`/api/raw/?path=${asPath}${hashedToken ? `&odpt=${hashedToken}` : ''}`}
+              src={`/api/raw/?path=${asPath}${hashedToken ? `&odpt=${hashedToken}` : ''}${preferredUser?.value ? `&user=${preferredUser.value}` : ''}`}
               ref={rapRef}
               controls
               preload="auto"

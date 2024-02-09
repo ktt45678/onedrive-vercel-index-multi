@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { getStoredToken } from './protectedRouteHandler'
+import useLocalStorage from './useLocalStorage';
+import { users } from '../components/SwitchUser';
 
 /**
  * Custom hook for axios to fetch raw file content on component mount
@@ -14,10 +16,11 @@ export default function useFileContent(
   const [response, setResponse] = useState('')
   const [validating, setValidating] = useState(true)
   const [error, setError] = useState('')
+  const [preferredUser, _] = useLocalStorage('preferredUser', users[0])
 
   useEffect(() => {
     const hashedToken = getStoredToken(path)
-    const url = fetchUrl + (hashedToken ? `&odpt=${hashedToken}` : '')
+    const url = fetchUrl + (hashedToken ? `&odpt=${hashedToken}` : '') + (preferredUser?.value ? `&user=${preferredUser.value}` : '')
 
     axios
       // Using 'blob' as response type to get the response as a raw file blob, which is later parsed as a string.
@@ -26,6 +29,6 @@ export default function useFileContent(
       .then(async res => setResponse(await res.data.text()))
       .catch(e => setError(e.message))
       .finally(() => setValidating(false))
-  }, [fetchUrl, path])
+  }, [fetchUrl, path, preferredUser])
   return { response, error, validating }
 }

@@ -4,7 +4,8 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import axios, { AxiosResponseHeaders } from 'axios'
 import Cors from 'cors'
 
-import { driveApi, cacheControlHeader } from '../../../config/api.config'
+import { driveApi, cacheControlHeader, redirectCacheControlHeader } from '../../../config/api.config'
+import { protectedRoutes } from '../../../config/site.config'
 import { encodePath, getAccessToken, checkAuthRoute } from '.'
 
 // CORS middleware for raw links: https://nextjs.org/docs/api-routes/api-middlewares
@@ -22,13 +23,15 @@ export function runCorsMiddleware(req: NextApiRequest, res: NextApiResponse) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const accessToken = await getAccessToken()
+  const { path = '/', odpt = '', proxy = false, redirect = '308', user } = req.query
+
+  const userPrefix = Array.isArray(user) ? user[0] : user
+
+  const accessToken = await getAccessToken(userPrefix)
   if (!accessToken) {
     res.status(403).json({ error: 'No access token.' })
     return
   }
-
-  const { path = '/', odpt = '', proxy = false } = req.query
 
   // Sometimes the path parameter is defaulted to '[...path]' which we need to handle
   if (path === '[...path]') {
@@ -42,19 +45,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   const cleanPath = pathPosix.resolve('/', pathPosix.normalize(path))
 
-  // Handle protected routes authentication
-  const odTokenHeader = (req.headers['od-protected-token'] as string) ?? odpt
+  if (protectedRoutes.length) {
+    // Handle protected routes authentication
+    const odTokenHeader = (req.headers['od-protected-token'] as string) ?? odpt
 
-  const { code, message } = await checkAuthRoute(cleanPath, accessToken, odTokenHeader)
-  // Status code other than 200 means user has not authenticated yet
-  if (code !== 200) {
-    res.status(code).json({ error: message })
-    return
-  }
-  // If message is empty, then the path is not protected.
-  // Conversely, protected routes are not allowed to serve from cache.
-  if (message !== '') {
-    res.setHeader('Cache-Control', 'no-cache')
+    const { code, message } = await checkAuthRoute(cleanPath, accessToken, odTokenHeader)
+    // Status code other than 200 means user has not authenticated yet
+    if (code !== 200) {
+      res.status(code).json({ error: message })
+      return
+    }
+    // If message is empty, then the path is not protected.
+    // Conversely, protected routes are not allowed to serve from cache.
+    if (message !== '') {
+      res.setHeader('Cache-Control', 'no-cache')
+    }
   }
 
   await runCorsMiddleware(req, res)
@@ -80,7 +85,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.writeHead(200, headers as AxiosResponseHeaders)
         stream.pipe(res)
       } else {
-        res.redirect(data['@microsoft.graph.downloadUrl'])
+        const redirectCode = +redirect
+        const statusCode = redirectCode >= 300 && redirectCode <= 308 ? redirectCode : 308
+        res.setHeader('Cache-Control', redirectCacheControlHeader);
+        res.redirect(statusCode, data['@microsoft.graph.downloadUrl'])
       }
     } else {
       res.status(404).json({ error: 'No download url found.' })

@@ -5,11 +5,17 @@ import { getAccessToken } from '.'
 import apiConfig from '../../../config/api.config'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Get access token from storage
-  const accessToken = await getAccessToken()
-
   // Get item details (specifically, its path) by its unique ID in OneDrive
-  const { id = '' } = req.query
+  const { id = '', user = '' } = req.query
+
+  const userPrefix = Array.isArray(user) ? user[0] : user
+
+  // Get access token from storage
+  const accessToken = await getAccessToken(userPrefix)
+  if (!accessToken) {
+    res.status(403).json({ error: 'No access token.' })
+    return
+  }
 
   // Set edge function caching for faster load times, check docs:
   // https://vercel.com/docs/concepts/functions/edge-caching

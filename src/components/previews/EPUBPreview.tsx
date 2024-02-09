@@ -9,6 +9,8 @@ import Loading from '../Loading'
 import DownloadButtonGroup from '../DownloadBtnGtoup'
 import { DownloadBtnContainer } from './Containers'
 import { getStoredToken } from '../../utils/protectedRouteHandler'
+import useLocalStorage from '../../utils/useLocalStorage'
+import { users } from '../SwitchUser'
 
 const EPUBPreview: FC<{ file: OdFileObject }> = ({ file }) => {
   const { asPath } = useRouter()
@@ -25,6 +27,7 @@ const EPUBPreview: FC<{ file: OdFileObject }> = ({ file }) => {
   const onLocationChange = (cfiStr: string) => setLocation(cfiStr)
 
   const { t } = useTranslation()
+  const [preferredUser, _] = useLocalStorage('preferredUser', users[0])
 
   // Fix for not valid epub files according to
   // https://github.com/gerhardsletten/react-reader/issues/33#issuecomment-673964947
@@ -56,7 +59,7 @@ const EPUBPreview: FC<{ file: OdFileObject }> = ({ file }) => {
             }}
           >
             <ReactReader
-              url={`/api/raw/?path=${asPath}${hashedToken ? '&odpt=' + hashedToken : ''}`}
+              url={`/api/raw/?path=${asPath}${hashedToken ? '&odpt=' + hashedToken : ''}${preferredUser?.value ? `&user=${preferredUser.value}` : ''}`}
               getRendition={rendition => fixEpub(rendition)}
               loadingView={<Loading loadingText={t('Loading EPUB ...')} />}
               location={location}

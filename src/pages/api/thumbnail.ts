@@ -9,14 +9,16 @@ import { checkAuthRoute, encodePath, getAccessToken } from '.'
 import apiConfig from '../../../config/api.config'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const accessToken = await getAccessToken()
+  // Get item thumbnails by its path since we will later check if it is protected
+  const { path = '', size = 'medium', odpt = '', user = '' } = req.query
+
+  const userPrefix = Array.isArray(user) ? user[0] : user
+
+  const accessToken = await getAccessToken(userPrefix)
   if (!accessToken) {
     res.status(403).json({ error: 'No access token.' })
     return
   }
-
-  // Get item thumbnails by its path since we will later check if it is protected
-  const { path = '', size = 'medium', odpt = '' } = req.query
 
   // Set edge function caching for faster load times, if route is not protected, check docs:
   // https://vercel.com/docs/concepts/functions/edge-caching

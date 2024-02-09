@@ -3,7 +3,7 @@ import CryptoJS from 'crypto-js'
 
 import apiConfig from '../../config/api.config'
 
-async function getConfig() {
+export async function getConfig() {
   const res = await axios.get('/api/config')
   return res.data
 }
@@ -61,7 +61,7 @@ export async function requestTokenWithAuthCode(code: string, config: any): Promi
 > {
   try {
     const clientId = config.clientId
-    const clientSecret = revealObfuscatedToken(config.clientSecret)
+    const clientSecret = config.clientSecret
     const { redirectUri, authApi } = apiConfig
 
     // Construct URL parameters for OAuth2
@@ -105,13 +105,14 @@ export async function getAuthPersonInfo(accessToken: string) {
   })
 }
 
-export async function sendTokenToServer(accessToken: string, refreshToken: string, expiryTime: string) {
+export async function sendTokenToServer(accessToken: string, refreshToken: string, expiryTime: string, user?: string) {
   return await axios.post(
     '/api',
     {
-      obfuscatedAccessToken: obfuscateToken(accessToken),
+      accessToken: accessToken,
       accessTokenExpiry: parseInt(expiryTime),
-      obfuscatedRefreshToken: obfuscateToken(refreshToken),
+      refreshToken: refreshToken,
+      user: user,
     },
     {
       headers: {

@@ -22,6 +22,7 @@ import {
 } from './MultiFileDownloader'
 
 import { layouts } from './SwitchLayout'
+import { users } from './SwitchUser'
 import Loading, { LoadingIcon } from './Loading'
 import FourOhFour from './FourOhFour'
 import Auth from './Auth'
@@ -157,12 +158,13 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
   const router = useRouter()
   const hashedToken = getStoredToken(router.asPath)
   const [layout, _] = useLocalStorage('preferredLayout', layouts[0])
+  const [preferredUser, __] = useLocalStorage('preferredUser', users[0])
 
   const { t } = useTranslation()
 
   const path = queryToPath(query)
 
-  const { data, error, size, setSize } = useProtectedSWRInfinite(path)
+  const { data, error, size, setSize } = useProtectedSWRInfinite(path, preferredUser.value)
 
   if (error) {
     // If error includes 403 which means the user has not completed initial setup, redirect to OAuth page

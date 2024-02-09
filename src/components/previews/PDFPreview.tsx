@@ -3,13 +3,16 @@ import { getBaseUrl } from '../../utils/getBaseUrl'
 import { getStoredToken } from '../../utils/protectedRouteHandler'
 import DownloadButtonGroup from '../DownloadBtnGtoup'
 import { DownloadBtnContainer } from './Containers'
+import useLocalStorage from '../../utils/useLocalStorage'
+import { users } from '../SwitchUser'
 
 const PDFEmbedPreview: React.FC<{ file: any }> = ({ file }) => {
   const { asPath } = useRouter()
   const hashedToken = getStoredToken(asPath)
+  const [preferredUser, _] = useLocalStorage('preferredUser', users[0])
 
   const pdfPath = encodeURIComponent(
-    `${getBaseUrl()}/api/raw/?path=${asPath}${hashedToken ? `&odpt=${hashedToken}` : ''}`
+    `${getBaseUrl()}/api/raw/?path=${asPath}${hashedToken ? `&odpt=${hashedToken}` : ''}${preferredUser?.value ? `&user=${preferredUser.value}` : ''}`
   )
   const url = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${pdfPath}`
 

@@ -15,6 +15,8 @@ import FourOhFour from '../FourOhFour'
 import Loading from '../Loading'
 import DownloadButtonGroup from '../DownloadBtnGtoup'
 import { DownloadBtnContainer, PreviewContainer } from './Containers'
+import useLocalStorage from '../../utils/useLocalStorage'
+import { users } from '../SwitchUser'
 
 const MarkdownPreview: FC<{
   file: any
@@ -25,6 +27,7 @@ const MarkdownPreview: FC<{
   const parentPath = standalone ? path.substring(0, path.lastIndexOf('/')) : path
 
   const { response: content, error, validating } = useFileContent(`/api/raw/?path=${parentPath}/${file.name}`, path)
+  const [preferredUser, _] = useLocalStorage('preferredUser', users[0])
   const { t } = useTranslation()
 
   // Check if the image is relative path instead of a absolute url
@@ -51,7 +54,7 @@ const MarkdownPreview: FC<{
         // eslint-disable-next-line @next/next/no-img-element
         <img
           alt={alt}
-          src={isUrlAbsolute(src as string) ? src : `/api/?path=${parentPath}/${src}&raw=true`}
+          src={isUrlAbsolute(src as string) ? src : `/api/?path=${parentPath}/${src}&raw=true${preferredUser?.value ? `&user=${preferredUser.value}` : ''}`}
           title={title}
           width={width}
           height={height}

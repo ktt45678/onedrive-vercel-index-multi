@@ -5,14 +5,13 @@ import axios from 'axios'
 
 import apiConfig from '../../../config/api.config'
 import siteConfig from '../../../config/site.config'
-import { revealObfuscatedToken } from '../../utils/oAuthHandler'
 import { compareHashedToken } from '../../utils/protectedRouteHandler'
-import { getOdAuthTokens, storeOdAuthTokens } from '../../utils/odAuthTokenStore'
+import { getOdAuthTokens, hasOdAuthTokens, storeOdAuthTokens } from '../../utils/odAuthTokenStore'
 import { runCorsMiddleware } from './raw'
 
 const basePath = pathPosix.resolve('/', process.env.BASE_DIRECTORY || '/')
 const clientId = process.env.CLIENT_ID || ''
-const clientSecret = revealObfuscatedToken(process.env.CLIENT_SECRET || '')
+const clientSecret = process.env.CLIENT_SECRET || ''
 
 /**
  * Encode the path of the file relative to the base directory
@@ -34,8 +33,8 @@ export function encodePath(path: string): string {
  *
  * @returns Access token for OneDrive API
  */
-export async function getAccessToken(): Promise<string> {
-  const { accessToken, refreshToken } = await getOdAuthTokens()
+export async function getAccessToken(user: string = ''): Promise<string> {
+  const { accessToken, refreshToken } = await getOdAuthTokens(user)
 
   // Return in storage access token if it is still valid
   if (typeof accessToken === 'string') {
@@ -69,6 +68,7 @@ export async function getAccessToken(): Promise<string> {
       accessToken: access_token,
       accessTokenExpiry: parseInt(expires_in),
       refreshToken: refresh_token,
+      user,
     })
     console.log('Fetch new access token with stored refresh token.')
     return access_token
@@ -160,22 +160,31 @@ export async function checkAuthRoute(
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // If method is POST, then the API is called by the client to store acquired tokens
   if (req.method === 'POST') {
-    const { obfuscatedAccessToken, accessTokenExpiry, obfuscatedRefreshToken } = req.body
-    const accessToken = revealObfuscatedToken(obfuscatedAccessToken)
-    const refreshToken = revealObfuscatedToken(obfuscatedRefreshToken)
+    const { accessToken, accessTokenExpiry, refreshToken, user = '' } = req.body
 
     if (typeof accessToken !== 'string' || typeof refreshToken !== 'string') {
       res.status(400).send('Invalid request body')
       return
     }
 
-    await storeOdAuthTokens({ accessToken, accessTokenExpiry, refreshToken })
+    if (user && !siteConfig.userList.includes(user)) {
+      res.status(403).send('User not allowed')
+      return
+    }
+
+    const userHasOdAuthTokens = await hasOdAuthTokens({ user })
+    if (userHasOdAuthTokens) {
+      res.status(403).send('Token has already been added')
+      return
+    }
+
+    await storeOdAuthTokens({ accessToken, accessTokenExpiry, refreshToken, user })
     res.status(200).send('OK')
     return
   }
 
   // If method is GET, then the API is a normal request to the OneDrive API for files or folders
-  const { path = '/', raw = false, next = '', sort = '' } = req.query
+  const { path = '/', raw = false, next = '', sort = '', user = '' } = req.query
 
   // Set edge function caching for faster load times, check docs:
   // https://vercel.com/docs/concepts/functions/edge-caching
@@ -200,7 +209,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return
   }
 
-  const accessToken = await getAccessToken()
+  const userPrefix = Array.isArray(user) ? user[0] : user
+
+  const accessToken = await getAccessToken(userPrefix)
+  if (!accessToken) {
+    res.status(403).json({ error: 'No access token.' })
+    return
+  }
 
   // Return error 403 if access_token is empty
   if (!accessToken) {
